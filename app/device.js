@@ -6,7 +6,8 @@
     disneyplus: 'MCmYXNxgcu.DisneyPlus', youtube: '9Ur5IzDKqV.TizenYouTube',
     appletv: 'com.samsung.tv.aria-video', primevideo: 'org.tizen.primevideo',
     abciview: 'mWK87Xghap.ABCiview', sbs: 'OyE7OuxlUi.SBSOnDemand',
-    applemusic: 'org.tizen.apple.apple-music'
+    applemusic: 'org.tizen.apple.apple-music',
+    browser: 'org.tizen.browser', luna: 'CmeyUlnhYY.LunaWebApp', xbox: 'com.samsung.tv.xbox'
   };
   var STREAMING = ['as6cYRgkPy.Binge', '73iTZRTc34.Stan', '5b8c3eb16b.BeamCTVDev',
     'KaLitts8bq.tenplaySamsungTizen', 'eYuOiOLYQX.KayoSports', 'Ne2ZsPWdKl.9NOW',
@@ -16,6 +17,7 @@
   var INTERNAL = ['adplatform.ADPlayer', 'WykOS4t4F0.cmsWebApp', '25emanual3.emanual',
     'ZODRT12q2l.WebAccountExtension', 'ByJlgt0XeD.CastSettingsApp', 'tv6pbVMQFF.PrivacyChoices'];
   var SELF = 'nClrkHome1.FrameHome';
+  var VIEWER = 'org.tizen.tv-viewer', SOURCE_POLL_MS = 4000;
   function api() { return window.tizen && window.tizen.application; }
   function unavailable(done) {
     done({ message: 'Open CleanFrame on the TV to use this control.', detail: 'The web preview cannot control the TV.' });
@@ -70,5 +72,76 @@
       }, function (err) { finish(failure(err)); });
     } catch (err) { finish(failure(err)); }
   }
-  window.FrameDevice = { launch: launch, launchApp: launchApp, art: art, home: home, settings: settings, apps: apps };
+  function sysinfo() { return window.tizen && window.tizen.systeminfo; }
+  function tvwindow() { return window.tizen && window.tizen.tvwindow; }
+  function sourcesUnavailable() {
+    return { message: 'Open CleanFrame on the TV to find its sources.', detail: 'The web preview cannot read TV inputs.' };
+  }
+  function readSources(done) {
+    var finish = bounded(done), info = sysinfo();
+    if (!info) { finish(sourcesUnavailable()); return; }
+    try { info.getPropertyValue('VIDEOSOURCE', function (raw) { finish(null, raw || {}); }, function (err) { finish(failure(err)); }); }
+    catch (err) { finish(failure(err)); }
+  }
+  function normaliseSources(raw) {
+    var list = [], seen = {};
+    function add(src, connected) {
+      var type = String(src && src.type || '').toUpperCase(), number = Number(src && src.number) || 0, key = type + ':' + number;
+      if ((type !== 'TV' && type !== 'HDMI') || seen[key]) return;
+      seen[key] = true; list.push({ type: type, number: number, connected: connected });
+    }
+    (raw.connected || []).forEach(function (src) { add(src, true); });
+    (raw.disconnected || []).forEach(function (src) { add(src, false); });
+    list.sort(function (a, b) { return (a.type === 'TV' ? 0 : 1) - (b.type === 'TV' ? 0 : 1) || a.number - b.number; });
+    return list;
+  }
+  function watchSources(onChange) {
+    var stopped = false, busy = false, last = null, timer = 0, listener = null;
+    function check() {
+      if (stopped || busy) return;
+      busy = true;
+      readSources(function (err, raw) {
+        var list = err ? null : normaliseSources(raw), key = err ? 'error:' + (err.message || '') : JSON.stringify(list);
+        busy = false;
+        if (stopped || key === last) return;
+        last = key;
+        onChange(err, list);
+      });
+    }
+    setTimeout(check, 0);
+    if (sysinfo()) {
+      timer = setInterval(function () { if (!document.hidden) check(); }, SOURCE_POLL_MS);
+      try { listener = sysinfo().addPropertyValueChangeListener('VIDEOSOURCE', check, null, function () {}); } catch (err) { listener = null; }
+    }
+    return function () {
+      stopped = true; clearInterval(timer);
+      if (listener !== null) { try { sysinfo().removePropertyValueChangeListener(listener); } catch (err) { /* already removed */ } }
+    };
+  }
+  function showViewer(finish) {
+    launchApp(VIEWER, function (err) {
+      if (!err) { finish(null); return; }
+      try { api().getCurrentApplication().hide(); finish(null); } catch (hideErr) { finish(err); }
+    });
+  }
+  function openSource(source, done) {
+    var finish = bounded(done);
+    if (!api() || !sysinfo()) { finish(sourcesUnavailable()); return; }
+    if (source.type === 'TV') { showViewer(finish); return; }
+    readSources(function (err, raw) {
+      var match = null, label = source.type + ' ' + source.number;
+      if (err) { finish(err); return; }
+      (raw.connected || []).concat(raw.disconnected || []).forEach(function (src) {
+        if (!match && String(src.type).toUpperCase() === source.type && Number(src.number) === source.number) match = src;
+      });
+      if (!match) { finish({ message: label + ' is not available on this TV.' }); return; }
+      if (!tvwindow()) { finish({ message: 'This TV cannot switch sources from CleanFrame.', detail: 'The TVWindow API is not available.' }); return; }
+      try {
+        tvwindow().setSource(match, function () { showViewer(finish); }, function (e) {
+          finish({ message: 'The TV could not switch to ' + label + '.', detail: e && (e.message || e.name) || '' });
+        }, 'MAIN');
+      } catch (e) { finish(failure(e)); }
+    });
+  }
+  window.FrameDevice = { launch: launch, launchApp: launchApp, art: art, home: home, settings: settings, apps: apps, watchSources: watchSources, openSource: openSource };
 }());

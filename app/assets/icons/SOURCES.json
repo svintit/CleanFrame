@@ -11,5 +11,12 @@
   "art": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
   "apps": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
   "settings": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
-  "home": "CleanFrame original utility outline, 24px grid / 1.6px stroke"
+  "home": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
+  "hdmi": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
+  "tv": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
+  "xbox": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/xbox.svg (CC0; recoloured white)",
+  "luna": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/amazonluna.svg (CC0; recoloured white)",
+  "switch": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/nintendoswitch.svg (CC0; recoloured white)",
+  "browser": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
+  "boosteroid": "https://github.com/marang/boosteroid/blob/main/io.github.marang.boosteroid.svg (unofficial community copy; white mark path only, tile omitted; trademark remains with Boosteroid)"
 }

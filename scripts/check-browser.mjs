@@ -4,7 +4,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { openPreview, root } from './browser.mjs';
 
 const KEY = 'cleanframe.home.v1';
-const PRIMARY = ['stremio', 'netflix', 'disneyplus', 'youtube', 'appletv', 'primevideo', 'abciview', 'sbs', 'applemusic'];
+const PRIMARY = ['youtube', 'netflix', 'primevideo', 'disneyplus', 'crave', 'appletv', 'browser', 'angel'];
+const GAMES = ['luna', 'xbox', 'boosteroid', 'switch'], HOME = PRIMARY.concat(GAMES), withoutGames = dock => dock.filter(id => !GAMES.includes(id));
 const IDS = ['IkWsFHtOY9.Stremio', 'org.tizen.netflix-app', 'MCmYXNxgcu.DisneyPlus', '9Ur5IzDKqV.TizenYouTube', 'com.samsung.tv.aria-video', 'org.tizen.primevideo', 'mWK87Xghap.ABCiview', 'OyE7OuxlUi.SBSOnDemand', 'org.tizen.apple.apple-music'];
 const NAMES = ['Stremio', 'Netflix', 'Disney+', 'YouTube', 'Apple TV', 'Prime Video', 'ABC iview', 'SBS On Demand', 'Apple Music'];
 const EXTRA = 'AbCdEf1234.FamilyApp', SPOTIFY = 'rJeHak5zRg.Spotify';
@@ -24,7 +25,7 @@ const sourceFiles = ['app/main.js', 'app/device.js', 'app/index.html', 'app/styl
 const hashes = () => Object.fromEntries(sourceFiles.map(f => [f, createHash('sha256').update(readFileSync(root + f)).digest('hex')]));
 const report = { scope: 'Production UI in Chromium; mock public Tizen API only; no TV contacted.', sourceBefore: hashes(), checks: [], failures: [], pageErrors: [], expectedNetworkFailures: [] };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const baseline = (patch = {}) => ({ dock: PRIMARY.slice(), wallpaper: walls[0].id, mode: 'fixed', lastApp: 'netflix', theme: 'shore', ...patch });
+const baseline = (patch = {}) => ({ dock: HOME.slice(), wallpaper: walls[0].id, mode: 'fixed', lastApp: 'netflix', theme: 'shore', catalogVersion: 3, ...patch });
 let preview, current, section = '';
 
 function check(name, pass, detail) {
@@ -221,7 +222,7 @@ try {
     await closePage();
     await page({ seed: { dock: [], wallpaper: 'missing', mode: 'constructor', theme: 'constructor' } });
     const s = await state();
-    check('Invalid values recover usable bounded Home', s.dock.length >= 1 && s.dock.length <= 9 && walls.some(w => w.id === s.wallpaper) && ['fixed', 'open', '5', '15', '60'].includes(s.mode), s);
+    check('Invalid values recover usable bounded Home', s.dock.length >= 1 && s.dock.length <= 20 && walls.some(w => w.id === s.wallpaper) && ['fixed', 'open', '5', '15', '60'].includes(s.mode), s);
     await closePage();
     await page({ seed: baseline({ dock: [EXTRA, 'netflix'], lastApp: EXTRA }), catalogFailure: true });
     await library();
@@ -261,7 +262,7 @@ try {
   });
   await run('Catalogue failure and retry', async () => {
     await page({ catalogFailure: true }); await library();
-    check('Catalogue failure leaves Home intact', same((await state()).dock, PRIMARY));
+    check('Catalogue failure leaves Home intact', same((await state()).dock, HOME));
     await current.evaluate(() => { __tv.catalogFailure = false; }); await act('apps.retry');
     await current.waitForSelector('[data-action="apps.open.' + EXTRA + '"]');
     check('Retry displays real installed names', (await current.locator('[data-action^="apps.open."]').count()) === 12);
@@ -304,12 +305,11 @@ try {
     await act('editor.move.netflix'); await nav('down', 'ok');
     const moved = start.slice(); [moved[1], moved[2]] = [moved[2], moved[1]];
     check('Placed move persists immediately', same((await stored()).dock, moved));
-    await act('editor.add.' + EXTRA); check('Nine-app cap prevents addition', (await state()).dock.length === 9 && !(await state()).dock.includes(EXTRA));
-    await remove('stremio'); await act('editor.add.' + EXTRA);
-    check('Native app can be pinned with stable ID', (await stored()).dock.includes(EXTRA) && (await state()).dock.length === 9);
+    await act('editor.add.' + EXTRA);
+    check('Native app can be pinned with stable ID', (await stored()).dock.includes(EXTRA) && (await state()).dock.length === HOME.length + 1);
     check('Native pin retains readable metadata for failed discovery', (await stored()).appRecords.some(a => a.id === EXTRA && a.name === UNSAFE_NAME));
     await current.reload(); await ready(); check('Native pin survives reload', (await state()).dock.includes(EXTRA));
-    await editor(); const ids = (await state()).dock;
+    await closePage(); await page({ seed: baseline({ dock: PRIMARY }) }); await editor(); const ids = (await state()).dock;
     for (const id of ids.slice(1)) await remove(id);
     await remove(ids[0]); check('Last Home app cannot be removed', same((await state()).dock, [ids[0]]) && same((await stored()).dock, [ids[0]]));
     check('Editor has no Save action', !(await current.locator('#stage').innerText()).match(/\bSave\b/));
@@ -341,8 +341,9 @@ try {
       if (font === 'newsreader') {
         for (const layout of ['list', 'dock']) for (const controls of ['icons', 'both', 'text']) {
           await look({ layout, controls });
-          const wrong = await current.evaluate(() => [...document.querySelectorAll('.home .clock, .home .u, .home .u-label, .home .ph-name, .home .tile .label, .home .app-focus-name, .home .util-focus-label, .home .wall-keep')].filter(e => !/Newsreader/.test(getComputedStyle(e).fontFamily)).map(e => ({ cls: e.className, font: getComputedStyle(e).fontFamily })));
+          const wrong = await current.evaluate(() => [...document.querySelectorAll('.home .u, .home .u-label, .home .ph-name, .home .tile .label, .home .app-focus-name, .home .util-focus-label, .home .wall-keep')].filter(e => !/Newsreader/.test(getComputedStyle(e).fontFamily)).map(e => ({ cls: e.className, font: getComputedStyle(e).fontFamily })));
           check('Newsreader covers Home text ' + layout + '/' + controls, wrong.length === 0, wrong);
+          check('Date and clock stay Geist ' + layout + '/' + controls, await current.evaluate(() => [...document.querySelectorAll('.home .clock, .home .date')].every(e => /Geist/.test(getComputedStyle(e).fontFamily))));
         }
       }
     }
@@ -361,7 +362,7 @@ try {
   });
   await run('Settings overview and visible choices', async () => {
     await page(); await scene('settings');
-    const expected = ['settings.group.background', 'settings.group.layout', 'settings.group.typography', 'settings.group.focus', 'settings.editor', 'settings.group.samsung'];
+    const expected = ['settings.group.background', 'settings.group.layout', 'settings.group.typography', 'settings.group.focus', 'settings.editor', 'settings.editor-games', 'settings.group.samsung'];
     check('Overview has all six settings groups', same((await call('actions')).filter(a => expected.includes(a)).sort(), expected.slice().sort()));
     const specs = {
       background: { bg: ['dark', 'light', 'photo'] },
@@ -805,10 +806,35 @@ try {
     await nav('ok'); await ready();
     check('A missing thumbnail does not prevent applying its full photo', (await state()).committed.wall === target.id && Object.values(await wallpaperBundle()).every(src => src.includes('/' + target.id)));
   });
+  await run('Unversioned profile', async () => {
+    await page({ seed: baseline({ dock: ['appletv', 'netflix'], catalogVersion: undefined, wallpaper: walls[1].id, mode: '15' }) });
+    const s = await state();
+    check('Unversioned profile resets to the default lineup and keeps look and wallpaper', same(s.dock, HOME) && s.wallpaper === walls[1].id && s.mode === '15', s);
+  });
+  await run('Apps on Games', async () => {
+    await page(); await scene('settings'); await act('settings.editor-games');
+    await current.waitForFunction(() => document.querySelector('#sheet .er'));
+    const names = () => current.$$eval('#sheet .er .er-text', els => els.map(e => e.textContent.trim()));
+    check('Games editor lists only games', same(await names(), ['Luna', 'Xbox', 'Boosteroid', 'Nintendo Switch']), await names());
+    await act('editor.move.luna'); await nav('down', 'ok');
+    check('Moving a game leaves apps in place', same((await state()).dock, PRIMARY.concat(['xbox', 'luna', 'boosteroid', 'switch'])), (await state()).dock);
+    await nav('down', 'right', 'ok');
+    check('Removing a game keeps every app', same((await state()).dock.filter(id => PRIMARY.includes(id)), PRIMARY) && !(await state()).dock.includes('boosteroid'), (await state()).dock);
+    await act('editor.undo');
+    check('Undo restores the removed game', (await state()).dock.includes('boosteroid'));
+  });
+  await run('Home cap', async () => {
+    const pins = Array.from({ length: 8 }, (_, i) => 'AbCdEf000' + i + '.Pin');
+    await page({ seed: baseline({ dock: HOME.concat(pins), catalogVersion: 3, appRecords: pins.map(id => ({ id, appId: id, name: 'Pin ' + id })) }) });
+    await editor();
+    check('Home is full at twenty apps', (await state()).dock.length === 20);
+    await act('editor.add.' + EXTRA);
+    check('Twenty-app cap prevents addition', (await state()).dock.length === 20 && !(await state()).dock.includes(EXTRA));
+  });
   await run('Physical-key repeats and Back hierarchy', async () => {
     await page(); await editor(); await remove('netflix');
     await current.keyboard.down('Enter'); await current.keyboard.down('Enter');
-    check('Held OK restores once without removing again', (await state()).dock.includes('netflix') && (await state()).dock.length === 9);
+    check('Held OK restores once without removing again', (await state()).dock.includes('netflix') && (await state()).dock.length === HOME.length);
     await current.keyboard.up('Enter');
     await current.keyboard.down('Escape'); await current.keyboard.down('Escape');
     check('Held Back closes one layer only', (await call('where')).view === 'settings' && (await state()).focusAction === 'settings.editor');

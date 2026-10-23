@@ -1,28 +1,41 @@
 /* CleanFrame Home. Static materials, local preferences and public Tizen app controls. */
 (function () {
   'use strict';
+  var CATEGORIES = [{ id: 'apps', name: 'Apps', glyph: 'apps' }, { id: 'games', name: 'Games', glyph: 'game' }, { id: 'sources', name: 'Sources', glyph: 'source' }];
+  var CATEGORY_KEY = 'cleanframe.category', CATALOG_VERSION = 3;
+  function loadCategory() {
+    var v = '', i;
+    try { v = String(localStorage.getItem(CATEGORY_KEY) || '').toLowerCase(); } catch (e) { v = ''; }
+    for (i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].id === v) return v;
+    return 'apps';
+  }
+  var currentCategory = loadCategory();
 
   /* ---------- Bundled data ---------- */
   var ASSETS = 'assets/', ICONS = ASSETS + 'icons/', WP = ASSETS + 'wallpapers/';
-  var CAP = 9, SCRIM_Y = 560;
+  var CAP = 20, SCRIM_Y = 560;
   var DOCK_MODES = { both: { tw: 288, th: 200, pitch: 296 }, text: { tw: 288, th: 104, pitch: 296 }, icons: { tw: 176, th: 144, pitch: 184 } };
   var GRID_ROW = 240, GRID_COL = 344, COLS = 5;
   var ED_ROW = 80, ED_SEP = 56, ED_VIEW = 752, STRIP_PITCH = 188;
   var PH_TOP = 220, PH_PITCH = 128, PH_FULL = 5, PH_HEIGHT = 944, PH_COMPACT_TOP = 144, PH_COMPACT_PITCH = 88, PH_COMPACT_VISIBLE = 9;
   var WALL_VISIBLE = 6, WALL_ROW = 92, WALL_DELAY = 200;
   var KEYS = { 37: 'left', 38: 'up', 39: 'right', 40: 'down', 13: 'ok', 27: 'back', 8: 'back', 10009: 'back', 461: 'back' };
-  var FULL = 'Home holds nine apps. Remove one first.', LAST = 'Home needs one app';
+  var FULL = 'Home is full. Remove one first.', LAST = 'Home needs one app';
 
+  var SWITCH_HDMI = 1;
   var PRIMARY_APPS = [
-    { id: 'stremio', name: 'Stremio', mark: true, appId: 'IkWsFHtOY9.Stremio' },
-    { id: 'netflix', name: 'Netflix', mark: true, appId: 'org.tizen.netflix-app' },
-    { id: 'disneyplus', name: 'Disney+', mark: true, appId: 'MCmYXNxgcu.DisneyPlus' },
-    { id: 'youtube', name: 'YouTube', mark: true, appId: '9Ur5IzDKqV.TizenYouTube' },
-    { id: 'appletv', name: 'Apple TV', mark: true, appId: 'com.samsung.tv.aria-video' },
-    { id: 'primevideo', name: 'Prime Video', mark: true, appId: 'org.tizen.primevideo' },
-    { id: 'abciview', name: 'ABC iview', mark: true, appId: 'mWK87Xghap.ABCiview' },
-    { id: 'sbs', name: 'SBS On Demand', mark: true, appId: 'OyE7OuxlUi.SBSOnDemand' },
-    { id: 'applemusic', name: 'Apple Music', mark: true, appId: 'org.tizen.apple.apple-music' }
+    { id: 'youtube', category: 'app', name: 'YouTube', mark: true, appId: '9Ur5IzDKqV.TizenYouTube' },
+    { id: 'netflix', category: 'app', name: 'Netflix', mark: true, appId: 'org.tizen.netflix-app' },
+    { id: 'primevideo', category: 'app', name: 'Prime Video', mark: true, appId: 'org.tizen.primevideo' },
+    { id: 'disneyplus', category: 'app', name: 'Disney+', mark: true, appId: 'MCmYXNxgcu.DisneyPlus' },
+    { id: 'crave', category: 'app', name: 'Crave', mark: false, appId: 'SKvHIMBcln.CraveTV' },
+    { id: 'appletv', category: 'app', name: 'Apple TV', mark: true, appId: 'com.samsung.tv.aria-video' },
+    { id: 'browser', category: 'app', name: 'Browser', mark: true, appId: 'org.tizen.browser' },
+    { id: 'angel', category: 'app', name: 'Angel Studios', mark: false, appId: '', match: /angel/i },
+    { id: 'luna', category: 'game', name: 'Luna', mark: true, appId: 'CmeyUlnhYY.LunaWebApp' },
+    { id: 'xbox', category: 'game', name: 'Xbox', mark: true, appId: 'com.samsung.tv.xbox' },
+    { id: 'boosteroid', category: 'game', name: 'Boosteroid', mark: true, appId: '', match: /boosteroid/i },
+    { id: 'switch', category: 'game', name: 'Nintendo Switch', mark: true, brand: 'switch', source: { type: 'HDMI', number: SWITCH_HDMI } }
   ];
   var PRIMARY = PRIMARY_APPS.map(function (a) { return a.id; }), APPS = PRIMARY_APPS.slice(), ALPHA = [];
   var WALLS = window.CleanFrameWallpapers || [{ id: 'misty', name: 'Misty coast', tone: 'light', ut: { tr: 'mist', br: 'mist' }, frostVeil: .20 }];
@@ -61,6 +74,9 @@
     undo: '<path d="M9 6 5 10l4 4"/><path d="M5 10h9.5a4.5 4.5 0 0 1 0 9H11"/>',
     check: '<path d="m5.5 12.5 4 4 9-9"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    rescan: '<path d="M19 12a7 7 0 1 1-2.1-5M19 4.5V9h-4.5"/>',
+    game: '<rect x="3" y="7" width="18" height="10" rx="3.5"/><path d="M7.5 10.5v3M6 12h3M15.5 11h.01M17.5 13h.01"/>',
+    source: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M12 17v3"/>',
     left: '<path d="m14.5 5-7 7 7 7"/>',
     right: '<path d="m9.5 5 7 7-7 7"/>',
     up: '<path d="m5 15.5 7-7 7 7"/>',
@@ -74,7 +90,7 @@
   var REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var S = {
     variant: 'B', geom: 'broad', c: null, stack: null,
-    sel: null, selIdx: 0, lastUtil: 0, appsFocus: null, settingsFocus: 'background', appearanceFocus: 'bg', detailFocus: {},
+    sel: null, selIdx: 0, catIdx: 0, catSel: {}, lastUtil: 0, appsFocus: null, settingsFocus: 'background', appearanceFocus: 'bg', detailFocus: {},
     undo: [], removedAt: {}, note: null, err: null,
     writes: 0, failed: 0, log: [], logN: 0, lastLaunch: null, press: null,
     wallShown: null, wallPending: null, wallError: null,
@@ -339,20 +355,27 @@
       if (app(id)) h.push(id);
     });
     if (!h.length) h = PRIMARY.slice();
+    else if (saved && (s.catalogVersion | 0) < CATALOG_VERSION) h = PRIMARY.slice();
     (Array.isArray(s.recent) ? s.recent : []).forEach(function (id) { if (safeId(id) && app(id) && h.indexOf(id) < 0 && recent.indexOf(id) < 0 && recent.length < 5) recent.push(id); });
     return {
       bg: pick(modern.bg, LOOK_VALUES.bg, legacyList ? 'dark' : 'photo'), layout: pick(modern.layout, LOOK_VALUES.layout, legacyList ? 'list' : 'dock'),
       apps: pick(modern.apps, LOOK_VALUES.apps, legacyList ? 'text' : 'both'), controls: pick(modern.controls, LOOK_VALUES.controls, 'both'),
       focus: pick(modern.focus, LOOK_VALUES.focus, legacyList ? 'type' : 'glass'), material: pick(modern.material, LOOK_VALUES.material, 'soft'),
       font: pick(modern.font, LOOK_VALUES.font, 'manrope'), wall: wall(modern.wall || s.wallpaper) ? modern.wall || s.wallpaper : WALLS[0].id,
-      home: h, recent: recent, lastApp: h.indexOf(s.lastApp) >= 0 ? s.lastApp : h[0],
+      home: h, recent: recent, cats: cleanCats(s.cats), lastApp: h.indexOf(s.lastApp) >= 0 ? s.lastApp : h[0],
       mode: pick(s.mode, MODES.map(function (m) { return m.id; }), 'fixed')
     };
   }
+  function cleanCats(raw) {
+    var out = {};
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) Object.keys(raw).forEach(function (id) { if (safeId(id) && (raw[id] === 'apps' || raw[id] === 'games')) out[id] = raw[id]; });
+    return out;
+  }
+  function withCat(cats, id, cat) { var out = {}; Object.keys(cats || {}).forEach(function (k) { out[k] = cats[k]; }); if (cat) out[id] = cat; return out; }
   function serialise(c) {
     var out = {}, id;
     Object.keys(c).forEach(function (key) { out[key] = c[key]; });
-    out.version = 2; out.look = lookOf(c); out.dock = c.home.slice(); out.wallpaper = c.wall;
+    out.version = 2; out.catalogVersion = CATALOG_VERSION; out.look = lookOf(c); out.dock = c.home.slice(); out.wallpaper = c.wall;
     out.theme = c.layout === 'list' ? 'list' : 'shore';
     out.appRecords = [];
     c.home.concat(c.recent).forEach(function (key) {
@@ -371,8 +394,8 @@
   }
   function clearSession() { S.undo = []; S.removedAt = {}; S.note = null; S.err = null; }
   function begin() { S.note = null; }
-  function next(home, recent) { var c = lookOf(S.c); c.home = home; c.recent = recent; c.lastApp = S.c.lastApp; c.mode = S.c.mode; return c; }
-  function snap() { return { home: S.c.home.slice(), recent: S.c.recent.slice() }; }
+  function next(home, recent) { var c = lookOf(S.c); c.home = home; c.recent = recent; c.cats = S.c.cats; c.lastApp = S.c.lastApp; c.mode = S.c.mode; return c; }
+  function snap() { return { home: S.c.home.slice(), recent: S.c.recent.slice(), cats: withCat(S.c.cats) }; }
   function pushRecent(list, id) { return [id].concat(without(list, id)).slice(0, 5); }
   function write(c, label) {
     try { localStorage.setItem(KEY, JSON.stringify(serialise(c))); }
@@ -397,7 +420,7 @@
     S.selIdx = i;
     return i;
   }
-  function setSel(id) { S.sel = id; S.selIdx = S.c.home.indexOf(id); }
+  function setSel(id) { S.sel = id; S.selIdx = S.c.home.indexOf(id); S.catSel[currentCategory] = id; }
 
   /* Membership and order operations shared by B and C. A works on slots (below). */
   function homeRemove(id) {
@@ -405,17 +428,18 @@
     if (i < 0) return false;
     if (S.c.home.length <= 1) { S.note = LAST; return false; }
     h = S.c.home.slice(); h.splice(i, 1);
-    if (!write(next(h, pushRecent(S.c.recent, id)), 'Remove ' + a.name + ' from Home')) return false;
+    if (!write(next(h, pushRecent(S.c.recent, id)), 'Remove ' + a.name + ' from ' + edName())) return false;
     S.removedAt[id] = i;
     S.undo.push({ label: 'Remove ' + a.name, snap: before });
     return true;
   }
   function homeAdd(id) {
-    var a = app(id), before = snap(), h = S.c.home.slice(), at;
+    var a = app(id), before = snap(), h = S.c.home.slice(), at, c;
     if (h.length >= CAP) { S.note = FULL; return false; }
     at = S.removedAt.hasOwnProperty(id) ? Math.min(S.removedAt[id], h.length) : h.length;
     h.splice(at, 0, id);
-    if (!write(next(h, without(S.c.recent, id)), 'Add ' + a.name + ' to Home')) return false;
+    c = next(h, without(S.c.recent, id)); c.cats = withCat(S.c.cats, id, edScope);
+    if (!write(c, 'Add ' + a.name + ' to ' + edName())) return false;
     S.undo.push({ label: 'Add ' + a.name, snap: before });
     return true;
   }
@@ -428,7 +452,9 @@
   function undoLast(arr) {
     var u = S.undo[S.undo.length - 1];
     if (!u) { S.note = 'Nothing to undo'; return false; }
-    if (!write(next(u.snap.home.slice(), u.snap.recent.slice()), 'Undo ' + u.label)) return false;
+    var restored = next(u.snap.home.slice(), u.snap.recent.slice());
+    restored.cats = u.snap.cats;
+    if (!write(restored, 'Undo ' + u.label)) return false;
     S.undo.pop();
     S.note = 'Undone: ' + u.label + '.';
     return true;
@@ -459,9 +485,18 @@
   function launch(id) {
     var a = app(id), c;
     if (!a || busy) return;
+    if (a.source) { S.press = id; S.lastLaunch = a.name; perform(a.name, function (done) { FrameDevice.openSource(a.source, done); }); return; }
     if (S.c.home.indexOf(id) >= 0) { c = next(S.c.home.slice(), S.c.recent.slice()); c.lastApp = id; write(c, 'Last app'); }
     S.press = id; S.lastLaunch = a.name;
-    perform(a.name, function (done) { FrameDevice.launchApp(a.appId, done); });
+    perform(a.name, function (done) { if (a.appId) FrameDevice.launchApp(a.appId, done); else findInstalled(a, done); });
+  }
+  function findInstalled(a, done) {
+    FrameDevice.apps(function (err, entries) {
+      var hit = err ? null : entries.filter(function (e) { return a.match && a.match.test(e.name); })[0];
+      if (!hit) { done(err || { message: a.name + ' is not installed on this TV.' }); return; }
+      a.appId = hit.appId;
+      FrameDevice.launchApp(hit.appId, done);
+    });
   }
   function refreshCatalog() {
     var request, oldFocus;
@@ -473,8 +508,12 @@
       if (err) { catalog.error = err.message || 'Could not read installed apps.'; if (!catalog.loaded) ALPHA = []; render(); return; }
       oldFocus = top().id === 'apps' ? ALPHA[top().f.i] : null;
       ALPHA = [];
+      PRIMARY_APPS.forEach(function (a) {
+        if (!a.match || a.appId && entries.some(function (e) { return e.appId === a.appId; })) return;
+        entries.some(function (e) { if (a.match.test(e.name) && !primaryIdFor(e.appId)) { a.appId = e.appId; return true; } return false; });
+      });
       entries.forEach(function (entry) {
-        var id = PRIMARY.indexOf(entry.brand) >= 0 ? entry.brand : entry.appId, a;
+        var id = PRIMARY.indexOf(entry.brand) >= 0 ? entry.brand : primaryIdFor(entry.appId) || entry.appId, a;
         if (!safeId(id) || !safeId(entry.appId) || ALPHA.indexOf(id) >= 0) return;
         a = app(id);
         if (!a) { a = { id: id }; APPS.push(a); }
@@ -514,11 +553,20 @@
     var e = { id: 'apps', mode: 'browse', top: 0, f: { zone: 'grid', i: Math.max(0, ALPHA.indexOf(S.appsFocus)), h: 0 } };
     push(e); refreshCatalog(); return e;
   }
-  function openEditor(origin) {
+  var edScope = 'apps';
+  function edName() { return edScope === 'games' ? 'Games' : 'Home'; }
+  function edHome(t) { return t && t.lifted ? t.lifted.order : S.c.home.filter(function (id) { return categoryOf(app(id)) === edScope; }); }
+  function mergeScoped(order) {
+    var at = 0;
+    return S.c.home.map(function (id) { return categoryOf(app(id)) === edScope ? order[at++] : id; });
+  }
+  function openEditor(origin, scope) {
+    edScope = scope || (origin === 'home' ? currentCategory : 'apps');
+    if (edScope !== 'games') edScope = 'apps';
     var i = ensureSel();
     clearSession();
     refreshCatalog();
-    push({ id: 'editor', origin: origin, lifted: null, top: 0, otherReturn: { id: otherList()[0] || null, index: 0, top: 0 }, f: { zone: S.c.home.length ? 'home' : 'other', i: Math.max(0, i), part: 'name', h: 1, j: 0 } });
+    push({ id: 'editor', origin: origin, lifted: null, top: 0, otherReturn: { id: otherList()[0] || null, index: 0, top: 0 }, f: { zone: edHome().length ? 'home' : 'other', i: Math.max(0, edHome().indexOf(S.sel)), part: 'name', h: 1, j: 0 } });
   }
   function openWallpaper() {
     var i = wallIndex(S.c.wall);
@@ -533,11 +581,13 @@
   /* ---------- Home (browse) ---------- */
   V.home = {
     key: function (t, k) {
-      var f = t.f, h = S.c.home, U = utils(), x = axes(), i = ensureSel();
-      if (S.c.layout === 'list') { listHomeKey(t, k, i, U); return; }
+      var f = t.f, h = homeIds(), U = utils(), x = axes(), i = homeSelIndex(h);
+      if (f.zone === 'tabs') { tabsKey(t, k); return; }
+      if (S.c.layout === 'list') { listHomeKey(t, k, h, i, U); return; }
       if (f.zone === 'util') {
         f.u = clamp(f.u, 0, U.length - 1);
         if (k === x.prev && f.u > 0) f.u--;
+        else if (k === x.prev) { enterTabs(t); return; }
         else if (k === x.next && f.u < U.length - 1) f.u++;
         else if (k === x.inn || k === 'back') f.zone = 'apps';
         else if (k === 'ok') { S.lastUtil = f.u; utilAction(U[f.u]); return; }
@@ -547,21 +597,23 @@
       f.zone = 'apps';
       if (k === x.out) { f.zone = 'util'; f.u = clamp(S.lastUtil, 0, U.length - 1); }
       else if (k === 'back') openMessage('leave');
-      else if (!h.length) { if (k === 'ok') addAppsRoute(); }
+      else if (!h.length) { if (k === 'ok') emptyAction(); }
       else if (k === x.prev && i > 0) setSel(h[i - 1]);
       else if (k === x.next && i < h.length - 1) setSel(h[i + 1]);
       else if (k === 'ok') launch(S.sel);
     },
     point: function (t, z, i) {
+      var h = homeIds();
       if (z === 'util') { t.f.zone = 'util'; t.f.u = i; S.lastUtil = i; }
-      else if (z === 'app') { t.f.zone = 'apps'; setSel(S.c.home[i]); }
+      else if (z === 'tab') { t.f.zone = 'tabs'; t.f.t = i; }
+      else if (z === 'app') { if (!h[i]) return; t.f.zone = 'apps'; setSel(h[i]); }
       else if (z === 'empty') t.f.zone = 'apps';
       else return;
       this.key(t, 'ok');
     }
   };
-  function listHomeKey(t, k, i, U) {
-    var f = t.f, h = S.c.home;
+  function listHomeKey(t, k, h, i, U) {
+    var f = t.f;
     if (f.zone === 'util') {
       f.u = clamp(f.u, 0, U.length - 1);
       if (k === 'up' && f.u > 0) f.u--;
@@ -573,10 +625,100 @@
     }
     f.zone = 'apps';
     if (k === 'up' && i > 0) setSel(h[i - 1]);
+    else if (k === 'up') enterTabs(t);
     else if (k === 'right') { f.zone = 'util'; f.u = clamp(S.lastUtil, 0, U.length - 1); }
     else if (k === 'down' && i < h.length - 1) setSel(h[i + 1]);
     else if (k === 'back') openMessage('leave');
-    else if (k === 'ok') { if (h.length) launch(S.sel); else addAppsRoute(); }
+    else if (k === 'ok') { if (h.length) launch(S.sel); else emptyAction(); }
+  }
+
+  /* ---------- Categories and sources ---------- */
+  var sourceState = { list: [], error: null, loading: false }, sourceStop = null;
+
+  function tabIndex(id) { for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].id === id) return i; return 0; }
+  function categoryOf(a) { return a && (S.c.cats[a.id] || (a.category === 'game' ? 'games' : 'apps')); }
+  function primaryIdFor(appId) { for (var i = 0; i < PRIMARY_APPS.length; i++) if (PRIMARY_APPS[i].appId === appId) return PRIMARY_APPS[i].id; return ''; }
+  function homeIds() {
+    if (currentCategory === 'sources') return sourceState.list.map(function (src) { return src.id; });
+    return S.c.home.filter(function (id) { return categoryOf(app(id)) === currentCategory; });
+  }
+  function homeSelIndex(h) {
+    var i = h.indexOf(S.sel);
+    if (!h.length) return -1;
+    if (i < 0) { i = clamp(S.catIdx, 0, h.length - 1); S.sel = h[i]; }
+    S.catIdx = i; S.catSel[currentCategory] = S.sel;
+    return i;
+  }
+  function enterTabs(t) { t.f.zone = 'tabs'; t.f.t = tabIndex(currentCategory); }
+  function tabsKey(t, k) {
+    var f = t.f, last = CATEGORIES.length - 1;
+    f.t = clamp(f.t | 0, 0, last);
+    if (k === 'left' && f.t > 0) f.t--;
+    else if (k === 'right' && f.t < last) f.t++;
+    else if (k === 'right' && S.c.layout !== 'list') { f.zone = 'util'; f.u = clamp(S.lastUtil, 0, utils().length - 1); }
+    else if (k === 'down' || k === 'back') f.zone = 'apps';
+    else if (k === 'ok') { chooseCategory(CATEGORIES[f.t].id); f.zone = 'apps'; }
+  }
+  function chooseCategory(id) {
+    var h;
+    if (id === currentCategory) return;
+    currentCategory = id;
+    try { localStorage.setItem(CATEGORY_KEY, id); } catch (e) { /* the choice lasts for this session */ }
+    h = homeIds();
+    S.sel = S.catSel[id] && h.indexOf(S.catSel[id]) >= 0 ? S.catSel[id] : h.length ? h[0] : null;
+    S.catIdx = Math.max(0, h.indexOf(S.sel));
+    syncSources();
+  }
+  function sourceName(src) { return src.type === 'TV' ? 'Live TV' : src.type + ' ' + src.number; }
+  function applySources(err, list) {
+    var i, ids, firstLive = -1;
+    for (i = APPS.length - 1; i >= 0; i--) if (APPS[i].category === 'source') APPS.splice(i, 1);
+    sourceState.loading = false;
+    sourceState.error = err ? err.message || 'Could not read the TV sources.' : null;
+    sourceState.list = (list || []).map(function (src) {
+      var id = 'source-' + src.type.toLowerCase() + '-' + src.number;
+      APPS.push({ id: id, name: sourceName(src), category: 'source', mark: true, brand: src.type === 'TV' ? 'tv' : 'hdmi', source: { type: src.type, number: src.number }, connected: src.connected });
+      return { id: id, type: src.type, connected: src.connected };
+    });
+    ids = sourceState.list.map(function (src) { return src.id; });
+    if (currentCategory === 'sources' && ids.indexOf(S.sel) < 0) {
+      sourceState.list.forEach(function (src, n) { if (firstLive < 0 && src.type === 'HDMI' && src.connected) firstLive = n; });
+      S.catIdx = firstLive >= 0 ? firstLive : 0;
+      S.sel = ids.length ? ids[S.catIdx] : null;
+    }
+    render();
+  }
+  function startSources() {
+    if (sourceStop) return;
+    sourceState.loading = true;
+    sourceStop = FrameDevice.watchSources(applySources);
+  }
+  function stopSources() {
+    if (sourceStop) { sourceStop(); sourceStop = null; }
+    sourceState.loading = false;
+  }
+  function rescanSources() { stopSources(); startSources(); render(); }
+  function syncSources() { if (currentCategory === 'sources') startSources(); else stopSources(); }
+  function emptyAction() { if (currentCategory === 'sources') rescanSources(); else addAppsRoute(); }
+  function emptyState() {
+    if (currentCategory === 'sources') return { text: sourceState.loading ? 'Looking for sources' : sourceState.error || 'No sources found', action: 'home.rescan', label: 'Scan again', glyph: 'rescan' };
+    if (currentCategory === 'games') return { text: 'No games on Home', action: 'home.add-apps', label: 'Add games', glyph: 'plus' };
+    return { text: 'No apps on Home', action: 'home.add-apps', label: 'Add apps', glyph: 'plus' };
+  }
+  function emptyHtml(hs) {
+    var e = emptyState();
+    return '<p>' + esc(e.text) + '</p><button type="button" tabindex="-1" class="btn' + (hs.zone === 'empty' ? ' is-focus' : '') + '" data-z="empty" data-i="0" data-action="' + e.action + '">' + icon(e.glyph) + '<span>' + esc(e.label) + '</span></button>';
+  }
+  function sourceClass(a) { return a && a.source ? (a.connected ? ' is-online' : ' is-offline') : ''; }
+  function renderTabs(t) {
+    var on = t.id === 'home' && !V[t.id].sheet, buttons = catTabs.querySelectorAll('.btn'), i;
+    catTabs.style.display = on ? 'flex' : 'none';
+    if (!on) return;
+    for (i = 0; i < buttons.length; i++) {
+      buttons[i].className = 'btn' + (CATEGORIES[i].id === currentCategory ? ' active' : '') + (t.f.zone === 'tabs' && t.f.t === i ? ' is-focus' : '');
+      buttons[i].setAttribute('aria-pressed', CATEGORIES[i].id === currentCategory ? 'true' : 'false');
+      attrs(buttons[i], 'tab', i, 'home.tab.' + CATEGORIES[i].id);
+    }
   }
 
   /* ---------- Wallpaper child: focus previews, activation applies ---------- */
@@ -710,8 +852,8 @@
 
   /* ---------- B: two-zone Home editor ---------- */
   function otherGroups() {
-    var rec = S.c.recent.filter(function (id) { return !onHome(id) && app(id); });
-    return { recent: rec, rest: ALPHA.filter(function (id) { return !onHome(id) && rec.indexOf(id) < 0; }) };
+    var rec = S.c.recent.filter(function (id) { return !onHome(id) && app(id) && categoryOf(app(id)) === edScope; });
+    return { recent: rec, rest: ALPHA.filter(function (id) { return !onHome(id) && rec.indexOf(id) < 0 && S.c.recent.indexOf(id) < 0; }) };
   }
   function otherList() { var o = otherGroups(); return o.recent.concat(o.rest); }
   function editorCut() { return 5; }
@@ -741,14 +883,14 @@
   V.editor = {
     sheet: true,
     norm: function (t) {
-      var f = t.f, nh = (t.lifted ? t.lifted.order : S.c.home).length, no = otherList().length;
+      var f = t.f, nh = edHome(t).length, no = otherList().length;
       f.i = clamp(f.i, 0, Math.max(0, nh - 1));
       f.j = clamp(f.j, 0, Math.max(0, no - 1));
       if (f.zone === 'home' && !nh) f.zone = no ? 'other' : 'head';
       if (f.zone === 'other' && !no) f.zone = nh ? 'home' : 'head';
     },
     key: function (t, k) {
-      var f = t.f, H = t.lifted ? t.lifted.order : S.c.home, O = otherList(), nh = H.length, no = O.length, d, tmp;
+      var f = t.f, H = edHome(t), O = otherList(), nh = H.length, no = O.length, d, tmp;
       if (t.lifted) {
         d = k === 'up' ? -1 : k === 'down' ? 1 : 0;
         if (d && f.i + d >= 0 && f.i + d < nh) { tmp = H[f.i + d]; H[f.i + d] = H[f.i]; H[f.i] = tmp; f.i += d; S.err = null; }
@@ -799,14 +941,14 @@
     if (!homeAdd(id)) return;
     var remaining = otherList(), at = clamp(t.otherReturn.index, 0, Math.max(0, remaining.length - 1));
     t.otherReturn.id = remaining[at] || null; t.otherReturn.index = at;
-    t.f.zone = 'home'; t.f.i = S.c.home.indexOf(id); t.f.part = 'remove';
-    S.note = app(id).name + ' is on Home, position ' + (t.f.i + 1) + '.';
+    t.f.zone = 'home'; t.f.i = edHome().indexOf(id); t.f.part = 'remove';
+    S.note = app(id).name + ' is on ' + edName() + ', position ' + (t.f.i + 1) + '.';
   }
   function editorPlace(t) {
     var L = t.lifted;
     begin();
-    if (same(L.order, S.c.home)) { t.lifted = null; return; }
-    if (!homeMove(L.order.slice(), L.id, L.snap)) return;
+    if (same(L.order, edHome())) { t.lifted = null; return; }
+    if (!homeMove(mergeScoped(L.order), L.id, L.snap)) return;
     t.lifted = null;
     S.note = app(L.id).name + ' moved to position ' + (t.f.i + 1) + '.';
   }
@@ -815,12 +957,13 @@
   /* ---------- Settings, Layout and messages ---------- */
   function mode() { for (var i = 0; i < MODES.length; i++) if (MODES[i].id === S.c.mode) return MODES[i]; return MODES[0]; }
   function settingsRows() {
-    var n = S.c.home.length;
+    var n = S.c.home.filter(function (id) { return categoryOf(app(id)) === 'apps'; }).length, g = S.c.home.length - n;
     return [{ id: 'background', label: 'Background', value: S.c.bg === 'photo' ? wall(S.c.wall).name : VALUE_NAMES[S.c.bg] },
       { id: 'layout', label: 'Layout', value: VALUE_NAMES[S.c.layout] },
       { id: 'typography', label: 'Typography', value: FONTS[S.c.font].name },
       { id: 'focus', label: 'Focus', value: VALUE_NAMES[S.c.focus] + (materialApplies() ? ', ' + VALUE_NAMES[S.c.material] : '') },
       { id: 'editor', label: 'Apps on Home', value: n + (n === 1 ? ' app' : ' apps') },
+      { id: 'editor-games', label: 'Apps on Games', value: g + (g === 1 ? ' app' : ' apps') },
       { id: 'samsung', label: 'Samsung', value: 'Home and TV settings' }];
   }
   function settingsIds() { return settingsRows().map(function (r) { return r.id; }); }
@@ -838,7 +981,8 @@
     point: function (t, z, i, id) { if (z === 'row' && id) { t.f.id = id; this.key(t, 'ok'); } }
   };
   function settingsOk(id) {
-    if (id === 'editor') openEditor('settings');
+    if (id === 'editor') openEditor('settings', 'apps');
+    else if (id === 'editor-games') openEditor('settings', 'games');
     else openAppearance(id);
   }
   var DETAIL_NAMES = { background: 'Background', layout: 'Layout', typography: 'Typography', focus: 'Focus', rotation: 'Rotation', samsung: 'Samsung' };
@@ -979,6 +1123,8 @@
   var utilFocusLabel = $('utilFocusLabel'), utilFocusKey = '', appFocusName = $('appFocusName');
   var dock = $('dock'), shelf = $('shelf'), track = $('track'), plate = $('plate'), matScrim = $('matScrim'), dockEmpty = $('dockEmpty');
   var cueL = $('cueL'), cueR = $('cueR'), dockAction = $('dockAction');
+  var catTabs = $('catTabs');
+  catTabs.innerHTML = CATEGORIES.map(function (c) { return '<button type="button" tabindex="-1" class="btn">' + icon(c.glyph) + '<span>' + c.name + '</span></button>'; }).join('');
   var focusStatus = $('focusStatus'), sceneEl = $('scene'), appearanceEl = $('appearance'), appearanceRows = $('appearanceRows'), appearanceDesc = $('appearanceDesc');
   var appearanceBack = $('appearanceBack'), appearanceTitle = $('appearanceTitle'), appearanceStatus = $('appearanceStatus');
   var phScene = $('phScene'), phPlate = $('phPlate'), phField = $('phField'), phList = $('phList'), phRows = $('phRows'), phAction = $('phAction'), phEmpty = $('phEmpty');
@@ -1024,6 +1170,7 @@
     if (!adaptive && shown.dockClockInk) stage.style.setProperty('--dock-clock-ink', shown.dockClockInk);
     else stage.style.removeProperty('--dock-clock-ink');
     applyHomeFont();
+    renderTabs(t);
     if (!sheet) renderHome(t);
     renderSheet(t, sheet);
     renderAppearance(t);
@@ -1039,8 +1186,9 @@
     Object.keys(values).forEach(function (key) { homeEl.style.setProperty('--font-' + key, String(values[key])); });
   }
 
+  
   function homeState(t) {
-    var h = S.c.home, hs = { mode: 'browse', zone: null, i: Math.max(0, ensureSel()), u: -1, lifted: false, from: -1, arr: null, items: h.map(function (id) { return { key: id, kind: 'app', id: id }; }) };
+    var ids = homeIds(), hs = { mode: 'browse', zone: null, i: Math.max(0, homeSelIndex(ids)), u: -1, lifted: false, from: -1, arr: null, items: ids.map(function (id) { return { key: id, kind: 'app', id: id }; }) };
     if (isSettingsDetail(t)) hs.zone = 'preview';
     else if (t.id === 'home') { hs.zone = t.f.zone; hs.u = t.f.u; }
     return hs;
@@ -1055,24 +1203,39 @@
     renderAppFocusName(hs);
   }
 
+  function dateText() {
+    var d = new Date(), days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate();
+  }
+
   function clockText() {
     var d = new Date(), h = d.getHours() % 12 || 12, m = d.getMinutes();
     return h + ':' + (m < 10 ? '0' : '') + m;
   }
+
   function clockHtml() {
-    var text = clockText(), metrics = fontMetrics[homeFont()];
-    if (!metrics || !metrics.digitCell) return text;
-    return text.replace(/[0-9]/g, function (digit) { return '<span class="clock-digit">' + digit + '</span>'; });
+    var d = new Date(), h = d.getHours() % 12 || 12, m = d.getMinutes();
+    var hStr = String(h);
+    var mStr = (m < 10 ? '0' : '') + m;
+    return '<span class="clock-hours">' + hStr + '</span><span class="clock-sep">:</span><span class="clock-mins">' + mStr + '</span>';
   }
+
+  
   function renderCaption(t, hs) {
-    var html = '<span class="clock">' + clockHtml() + '</span>';
-    if (S.c.apps !== 'icons' && hs.items[hs.i] && (S.c.layout === 'list' ? photoLabel(hs.items[hs.i].id, false).size < 88 || photoLabel(hs.items[hs.i].id, false).ellipsis : hs.zone === 'apps' && reducedDockLabel(hs.items[hs.i].id))) html += '<span class="cap-line full-name">' + esc(app(hs.items[hs.i].id).name) + '</span>';
+    var html = '<div class="time-row"><span class="date">' + dateText() + '</span><span class="clock">' + clockHtml() + '</span></div>';
+    var focused = hs.items[hs.i];
+    if (focused && S.c.apps !== 'icons' && (S.c.layout === 'list' ? photoLabel(focused.id, false).size < 88 || photoLabel(focused.id, false).ellipsis : hs.zone === 'apps' && reducedDockLabel(focused.id))) {
+      var a = app(focused.id);
+      if (a) html += '<span class="cap-line full-name">' + esc(a.name) + '</span>';
+    }
     setHTML(caption, html);
   }
+
 
   function utilBtn(z, i, action, inner, extra, name) {
     return '<button type="button" tabindex="-1" class="u' + (extra || '') + '" data-z="' + z + '" data-i="' + i + '" data-action="' + action + '" aria-label="' + esc(name) + '"><span class="u-content">' + inner + '</span></button>';
   }
+
   function renderUtils(hs) {
     var html = '', style = hs.mode === 'arrange' && S.c.controls !== 'text' ? 'both' : S.c.controls;
     var iconsOnly = style === 'icons', U = utils(), focused = null;
@@ -1087,6 +1250,7 @@
     renderUtilFocusLabel(iconsOnly ? focused : null);
     renderUtilityLens(focused, iconsOnly);
   }
+
   function renderUtilFocusLabel(button) {
     var text, key, r, sr, scale, width, x;
     if (!button) { utilFocusLabel.className = 'util-focus-label'; utilFocusKey = ''; return; }
@@ -1205,7 +1369,7 @@
     var items = hs.items, n = items.length, empty = hs.mode !== 'arrange' && !n, g = dockGeom(empty ? -1 : n);
     var anchor = clamp(hs.i, 0, Math.max(0, n - 1)), off = empty ? 0 : dockOffset(n, anchor, g);
     var full = hs.arr ? live(hs.arr.slots).length >= CAP : false, ns = hs.arr ? hs.arr.slots.length : n;
-    var tileFocus = hs.zone === 'apps' || hs.zone === 'tiles', tileSel = hs.zone === 'util' || hs.zone === 'act' || hs.zone === 'ctl' || hs.zone === 'preview';
+    var tileFocus = hs.zone === 'apps' || hs.zone === 'tiles', tileSel = hs.zone === 'util' || hs.zone === 'act' || hs.zone === 'ctl' || hs.zone === 'preview' || hs.zone === 'tabs';
     var focusItem = items[anchor], s, ax, label, width;
 
     dock.className = 'dock' + (empty ? ' is-empty' : '');
@@ -1225,7 +1389,7 @@
       var lifted = hs.lifted && i === anchor, partial = g.broad && (left - off < -1 || left + g.tw - off > g.shelf + 1);
       setContent(el, it.kind + '|' + (it.id || '') + '|' + (it.id ? dockLabelSize(it.id) : full) + '|' + S.c.bg + '|' + S.c.apps + '|' + homeFont(), '<span class="tile-content">' + dockTileHtml(it, full) + '</span>');
       el.className = 'tile k-' + it.kind + (focus ? ' is-focus' : '') + (sel ? ' is-sel' : '') + (lifted ? ' is-lifted' : '') + (partial ? ' is-partial' : '')
-        + (a && !a.mark ? ' is-text' : '') + (it.kind === 'add' && full ? ' is-full' : '') + (it.kind === 'app' && S.press === it.id ? ' is-press' : '')
+        + (a && !a.mark ? ' is-text' : '') + sourceClass(a) + (it.kind === 'add' && full ? ' is-full' : '') + (it.kind === 'app' && S.press === it.id ? ' is-press' : '')
         + (lifted && i === 0 ? ' no-l' : '') + (lifted && i >= ns - 1 ? ' no-r' : '');
       el.style.transform = 'translate3d(' + left + 'px,0,0)';
       el.setAttribute('role', 'button');
@@ -1261,7 +1425,7 @@
       dockAction.className = 'dock-action';
       dockAction.removeAttribute('data-z'); dockAction.removeAttribute('data-action');
     }
-    setHTML(dockEmpty, empty ? '<p>No apps on Home</p><button type="button" tabindex="-1" class="btn' + (hs.zone === 'empty' ? ' is-focus' : '') + '" data-z="empty" data-i="0" data-action="home.add-apps">' + icon('plus') + '<span>Add apps</span></button>' : '');
+    setHTML(dockEmpty, empty ? emptyHtml(hs) : '');
   }
 
   function photoModeTransition(compact) {
@@ -1307,7 +1471,7 @@
   function renderList(hs) {
     var items = hs.items, n = items.length, compact = hs.mode === 'arrange', pitch = compact ? PH_COMPACT_PITCH : PH_PITCH;
     var anchor = clamp(hs.i, 0, Math.max(0, n - 1)), first, off, width, slot, y, s, label, aw, plateState;
-    var rowFocus = hs.zone === 'apps' || hs.zone === 'tiles', remembered = hs.zone === 'util' || hs.zone === 'act' || hs.zone === 'ctl' || hs.zone === 'preview';
+    var rowFocus = hs.zone === 'apps' || hs.zone === 'tiles', remembered = hs.zone === 'util' || hs.zone === 'act' || hs.zone === 'ctl' || hs.zone === 'preview' || hs.zone === 'tabs';
     photoModeTransition(compact);
     if (compact) {
       first = clamp(scroll.photoArrange, anchor - 7, anchor - 1);
@@ -1333,7 +1497,7 @@
         markImage.onerror = function () { this.style.visibility = 'hidden'; };
         if (markImage.complete && !markImage.naturalWidth) markImage.style.visibility = 'hidden';
       }
-      row.className = 'ph-row k-' + it.kind + (focus ? ' is-focus' : '') + (remembered && i === anchor ? ' is-sel' : '') + (lifted ? ' is-lifted' : '')
+      row.className = 'ph-row k-' + it.kind + sourceClass(app(it.id)) + (focus ? ' is-focus' : '') + (remembered && i === anchor ? ' is-sel' : '') + (lifted ? ' is-lifted' : '')
         + (lifted && i === 0 ? ' no-up' : '') + (lifted && i === n - 1 ? ' no-down' : '')
         + (it.kind === 'app' && S.press === it.id ? ' is-press' : '');
       row.style.width = (compact ? listPlateWidth(it.id, compact) : 1200) + 'px'; row.style.height = pitch + 'px';
@@ -1354,7 +1518,7 @@
       attrs(phAction, 'act', anchor, 'arrange.' + (s.removed ? 'restore.' : 'remove.') + s.id);
     } else { phAction.className = 'ph-action'; phAction.removeAttribute('data-z'); phAction.removeAttribute('data-action'); }
     phEmpty.className = 'ph-empty' + (!compact && !n ? ' is-on' : '');
-    setHTML(phEmpty, !compact && !n ? '<p>No apps on Home</p><button type="button" tabindex="-1" class="btn' + (hs.zone === 'empty' ? ' is-focus' : '') + '" data-z="empty" data-i="0" data-action="home.add-apps">' + icon('plus') + '<span>Add apps</span></button>' : '');
+    setHTML(phEmpty, !compact && !n ? emptyHtml(hs) : '');
   }
 
   /* Sheets: a frame is built once per view/mode; fill() updates its slots. Persistent
@@ -1505,8 +1669,8 @@
         + '<div class="row-cue grid-before" data-slot="before" aria-hidden="true">' + icon('up') + '</div><div class="row-cue grid-after" data-slot="after" aria-hidden="true">' + icon('down') + '</div>';
     },
     editor: function () {
-      return '<h2 class="s-title">Apps on Home</h2><p class="s-sub" data-slot="sub"></p><div class="s-head" data-slot="head"></div>'
-        + '<p class="s-label z-home" data-slot="lh"></p><p class="s-label z-other">Not on Home</p>'
+      return '<h2 class="s-title" data-slot="title"></h2><p class="s-sub" data-slot="sub"></p><div class="s-head" data-slot="head"></div>'
+        + '<p class="s-label z-home" data-slot="lh"></p><p class="s-label z-other" data-slot="lo"></p>'
         + '<div class="ed-home" data-slot="home"></div><div class="ed-order-break" data-slot="break">Then scroll</div><div class="ed-other-view" data-slot="ov"><div class="ed-other" data-slot="other"></div></div><div class="ed-origin" data-slot="origin"></div>'
         + '<div class="row-cue editor-before" data-slot="otherBefore" aria-hidden="true">' + icon('up') + '</div><div class="row-cue editor-after" data-slot="otherAfter" aria-hidden="true">' + icon('down') + '</div>';
     },
@@ -1543,13 +1707,15 @@
       el.after.className = 'row-cue grid-after' + (rows - t.top > vis ? ' is-on' : '');
     },
     editor: function (t, el) {
-      var f = t.f, H = t.lifted ? t.lifted.order : S.c.home, O = otherGroups(), list = O.recent.concat(O.rest), full = S.c.home.length >= CAP;
+      var f = t.f, H = edHome(t), O = otherGroups(), list = O.recent.concat(O.rest), full = S.c.home.length >= CAP;
       var entries = [], ys = [], y = 0, yf, minTop, maxTop = 0, rowEnd, before = false, afterRows = false;
-      var hint = catalog.error ? catalog.error : catalog.loading ? 'Loading installed apps…' : f.zone === 'head' && f.h === 0 ? undoCaption() : f.zone === 'home' && f.part === 'remove' ? (H.length <= 1 ? LAST : app(H[f.i]).name + ' stays installed.') : '';
+      var hint = catalog.error ? catalog.error : catalog.loading ? 'Loading installed apps…' : f.zone === 'head' && f.h === 0 ? undoCaption() : f.zone === 'home' && f.part === 'remove' ? (S.c.home.length <= 1 ? LAST : app(H[f.i]).name + ' stays installed.') : '';
       setHTML(el.sub, editStatus(hint, t.lifted ? 'Moving ' + app(t.lifted.id).name + '. OK places it, Back puts it back.' : ''));
       setHTML(el.head, headButtons([['undo', 'Undo', S.undo.length ? '' : 'is-idle', 'undo'], ['done', 'Done', '', 'check']], f.zone === 'head' ? f.h : -1, 'editor'));
       el.head.className = 's-head' + (f.zone === 'head' ? ' is-awake' : '');
-      setHTML(el.lh, 'On Home <span class="s-count">' + S.c.home.length + ' of ' + CAP + '</span>');
+      setHTML(el.title, 'Apps on ' + edName());
+      setHTML(el.lo, 'Not on ' + edName());
+      setHTML(el.lh, 'On ' + edName() + ' <span class="s-count">' + H.length + (edScope === 'games' ? '' : ' of ' + CAP) + '</span>');
       el['break'].className = 'ed-order-break' + (H.length > editorCut() ? ' is-on' : '');
       el['break'].style.top = (264 + editorCut() * ED_ROW) + 'px';
 
@@ -1560,8 +1726,8 @@
         row.style.transform = 'translate3d(' + (lifted ? 16 : 0) + 'px,' + editorHomeY(i) + 'px,0)';
         row.querySelector('.er-num').textContent = String(i + 1);
         row.firstChild.className = 'er-name' + (here && (f.part === 'name' || lifted) ? ' is-focus' : '');
-        row.lastChild.className = 'er-rm' + (here && f.part === 'remove' && !lifted ? ' is-focus' : '') + (H.length <= 1 ? ' is-limit' : '');
-        row.lastChild.firstChild.textContent = H.length <= 1 ? LAST : 'Remove from Home';
+        row.lastChild.className = 'er-rm' + (here && f.part === 'remove' && !lifted ? ' is-focus' : '') + (S.c.home.length <= 1 ? ' is-limit' : '');
+        row.lastChild.firstChild.textContent = S.c.home.length <= 1 ? LAST : 'Remove from ' + edName();
         attrs(row.firstChild, 'name', i, 'editor.move.' + it.id);
         attrs(row.lastChild, 'remove', i, 'editor.remove.' + it.id);
       });
@@ -1591,7 +1757,7 @@
         if (it.sep) { setContent(row, 'sep|' + it.sep, esc(it.sep)); row.className = 'eo-sep'; return; }
         j = list.indexOf(it.id); focus = f.zone === 'other' && j === f.j; a = app(it.id);
         setContent(row, it.id, '<span class="panel-content">' + smallMark(a) + '<span class="eo-text">' + esc(a.name) + '</span><span class="eo-verb"></span></span>');
-        row.querySelector('.eo-verb').innerHTML = focus ? '<span class="verb' + (full ? ' is-off' : '') + '">' + (full ? 'Home is full' : 'Add to Home') + '</span>' : '';
+        row.querySelector('.eo-verb').innerHTML = focus ? '<span class="verb' + (full ? ' is-off' : '') + '">' + (full ? 'Home is full' : 'Add to ' + edName()) + '</span>' : '';
         row.className = 'eo' + (focus ? ' is-focus' : '');
         row.setAttribute('role', 'button');
         attrs(row, 'other', j, 'editor.add.' + it.id);
@@ -1604,7 +1770,7 @@
     settings: function (t, el) {
       var html = '';
       settingsRows().forEach(function (r) {
-        html += '<button type="button" tabindex="-1" class="settings-group' + (r.id === t.f.id ? ' is-focus' : '') + '" data-z="row" data-i="0" data-id="' + r.id + '" data-action="settings.' + (r.id === 'editor' ? 'editor' : 'group.' + r.id) + '"><span class="settings-group-copy"><span class="settings-group-name">' + esc(r.label) + '</span><span class="settings-group-value">' + esc(r.value) + '</span></span>' + icon('right') + '</button>';
+        html += '<button type="button" tabindex="-1" class="settings-group' + (r.id === t.f.id ? ' is-focus' : '') + '" data-z="row" data-i="0" data-id="' + r.id + '" data-action="settings.' + (r.id === 'editor' || r.id === 'editor-games' ? r.id : 'group.' + r.id) + '"><span class="settings-group-copy"><span class="settings-group-name">' + esc(r.label) + '</span><span class="settings-group-value">' + esc(r.value) + '</span></span>' + icon('right') + '</button>';
       });
       setHTML(el.list, html);
     },
@@ -1860,6 +2026,7 @@
     out.wallpaperPicker = t.id === 'wallpaper' ? { candidate: WALLS[t.i].id, applied: S.c.wall, shown: S.wallShown, pending: t.previewDue || S.wallPending,
       queuedApplying: !!t.applyPending, applyPending: t.applyPending, failed: t.failedId, zone: t.f.zone, top: t.top, visible: WALL_VISIBLE, backdrop: IMG.bg.src } : null;
     out.undo = S.undo.map(function (u) { return u.label; }); out.storageOk = storageOk;
+    out.category = currentCategory; out.sources = sourceState.list.map(function (src) { return { id: src.id, connected: src.connected }; }); out.sourceError = sourceState.error;
     return JSON.parse(JSON.stringify(out));
   };
   QA.where = function () {
@@ -1879,4 +2046,5 @@
   initialise();
   setLook({}, { transient: true, startup: true });
   norm(); render(); fit(); focusStage(); updateClock(); syncRotation();
+  syncSources();
 })();
