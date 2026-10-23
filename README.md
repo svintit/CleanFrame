@@ -2,7 +2,7 @@
 
 A quieter home screen for Samsung The Frame. Your apps, a photograph and the time, with an interface made for the TV remote.
 
-![CleanFrame browser preview with Apps, Games and Sources tabs, a date and clock in Geist, and a dock of apps](docs/images/cleanframe-dock.jpg)
+![CleanFrame browser preview with Apps, Games and Sources tabs, a date and clock in Geist, and a list of apps](docs/images/cleanframe-list.jpg)
 
 I built CleanFrame for one TV: my own Samsung The Frame, running Tizen. I'm sharing the code and setup notes as a starting point for other people to build on.
 
